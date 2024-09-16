@@ -132,11 +132,12 @@ int main(void) {
     char   buf[MAXLINE];
     pid_t  pid;
     int    status;
-    char directory_path[PATH_MAX];
-    int argc;
+    char directory_path[PATH_MAX];//current directory
+    int argc; //number of arguments
     char *argv[MAX_PARAMS]; //array of arguments input by user
     char *pathnameEnvs[PATH_MAX];// pathname environments
     int pathnameEnvCount; // number of pathname environments
+    int pathFound = 0; // found full path of command 
 
     //init pathname environments
     initPathnameEnvs(pathnameEnvs, pathnameEnvCount);
@@ -206,17 +207,25 @@ int main(void) {
             if ((pid = fork()) < 0) {
                 printf("Error: fork error");
             } else if (pid == 0) { // child
-                // if(execv(combineStrings(cmdPath, argv[0]), argv) == -1){
-                //     printf("Error: couldn't execute: %s\n", buf);
-                //     exit(127);
-                // }
+                // find full path of the command (pathname environment + "/" + command) e.g. "/bin/ls"
                 int i = 0;
                 char* cmdPath = combineStrings3(pathnameEnvs[i], "/",argv[0]);
-                while (execv(cmdPath, argv) == -1)
-                {
-                    //printf("Error: couldn't execute: %s\n", cmdPath);
-                    i++;
-                    cmdPath = combineStrings3(pathnameEnvs[i], "/",argv[0]);
+                pathFound = 0; 
+                while (pathFound == 0 && (i < pathnameEnvCount))
+                {                    
+                    if(access(cmdPath, X_OK) == -1)
+                    {
+                        // if has no access permissions or if the file does not exist
+                        i++;
+                        cmdPath = combineStrings3(pathnameEnvs[i], "/",argv[0]);
+                    }
+                    else {
+                        // if found the full path, execute command
+                        printf("Found path\n");
+                        pathFound = 1;
+                        execv(cmdPath, argv);
+                        exit;
+                    }
                 }
             }
             else {
@@ -224,12 +233,10 @@ int main(void) {
                 if ((pid = waitpid(pid, &status, 0)) < 0)
                     printf("Error: waitpid error");
             }            
-            
         }
-
         //get current directory again
         getCurrentFolder(directory_path);
-        printShellDirectory(directory_path);//printf("%s $ ", directory_path);
+        printShellDirectory(directory_path);
     }
     exit(EXIT_SUCCESS);
 }
