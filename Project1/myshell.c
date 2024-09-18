@@ -210,7 +210,9 @@ void executeCommand(char *cmd, char *pathnames) {
                 isValidPath = access(cmdPath, X_OK);
                 path = strtok(NULL, ":");
             }
-            if(isValidPath != -1){
+            if(isValidPath == -1)
+                printf("This command is not supported. Please try again.\n");
+            else{
                 execv(cmdPath, argv);
                 perror("Failed to execute command");
             }
