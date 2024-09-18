@@ -128,31 +128,6 @@ void removePathnameEnv(char *array[], int *size, const char *pathToRemove) {
     //printf("Path \"%s\" not found.\n", pathToRemove);
 }
 
-// Function to support redirection
-void processRedirection(int redirection, char *filename){
-    // check redirection: input redirection "<" and output redirection ">"                
-    // if(redirection == -1){
-    //     // input redirection "<"
-    //     int fd = open(filename, O_RDONLY);
-    //     if (fd < 0) {
-    //         perror("Failed to open input file");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     dup2(fd, STDIN_FILENO);
-    //     close(fd);
-    // }
-    // if(redirection == 1){ // output redirection ">"
-    //     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    //     if (fd < 0) {
-    //         perror("Failed to open output file");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     dup2(fd, 1);
-    //     close(fd);        
-        
-    // }
-}
-
 int main(void) {
     char   buf[MAXLINE];
     pid_t  pid;
@@ -168,9 +143,7 @@ int main(void) {
     char *outputFile = NULL;
     int inputRedirection = 0; 
     int outputRedirection = 0; 
-    // First make a copy of stdout
-    int stdout_save = dup(1);
-
+        
     //init pathname environments
     initPathnameEnvs(pathnameEnvs, pathnameEnvCount);
     // get current folder    
@@ -210,7 +183,7 @@ int main(void) {
                 if (arg != NULL) {
                     inputFile = arg;
                 }
-                printf("Redirection: %d %s", inputRedirection, inputFile);
+                //printf("Redirection: %d %s\n", inputRedirection, inputFile);
             } 
             if (strcmp(arg, ">") == 0) {
                 outputRedirection = 1;
@@ -218,10 +191,10 @@ int main(void) {
                 if (arg != NULL) {
                     outputFile = arg;
                 }
-                printf("Redirection: %d %s", inputRedirection, outputFile);
+                //printf("Redirection: %d %s\n", inputRedirection, outputFile);
             }
             else {
-                printf("Arg %d: %s\n", argc, arg);
+                //printf("Arg %d: %s\n", argc, arg);
                 argv[argc] = strdup(arg); // Allocate memory, copy the word, store to argv[]
                 // find next arguments
                 arg = strtok(NULL, " ");
@@ -245,8 +218,8 @@ int main(void) {
         if(strcmp(argv[0], "path") == 0) {            
             if(argc >1)
             {                
-                //path + /abc/def: appends directory "/abc/def" to the end of the pathname environment.
-                //path - /abc/def: removes pathname "/abc/def" from the pathname environment if it exists. Otherwise, do nothing.
+                //path + /bin: add pathname "/bin"
+                //path - /bin: removes pathname "/bin" from the pathname environment if it exists
                 if(strcmp(argv[1],"+") == 0){
                     addPathnameEnv(pathnameEnvs, &pathnameEnvCount, argv[2]);                    
                 }
@@ -263,14 +236,11 @@ int main(void) {
         /*
         Execute other commands
         */
-        else{            
-            if ((pid = fork()) < 0) {
+        else{ 
+            pid_t pid = fork();           
+            if (pid < 0) {
                 printf("Error: fork error");
             } else if (pid == 0) { // child
-                // check redirection: input redirection "<" and output redirection ">"                
-                // if(outputRedirection == 1){
-                //     processRedirection(outputRedirection, outputFile);
-                // }
                 // find full path of the command (pathname environment + "/" + command) e.g. "/bin/ls"
                 int i = 0;
                 pathFound = 0;
@@ -278,17 +248,38 @@ int main(void) {
                 while (pathFound == 0 && (i < pathnameEnvCount))
                 {        
                     cmdPath = combineStrings3(pathnameEnvs[i], "/",argv[0]);
-                    // if the file does not exist, find next path                       
+                    // if the file does not exist, find next path
                     if(access(cmdPath, X_OK) == -1)
                         i++;
-                    else {
-                        // if found, execute command
-                        //printf("Found path of command\n");
+                    else
                         pathFound = 1;
-                        execv(cmdPath, argv);
-                        exit(EXIT_FAILURE);
+                }
+                // if found, execute command
+                if(pathFound == 1){                    
+                    //printf("Found path of command\n");
+                    // check redirection
+                    if (inputFile != NULL) {
+                        int fd = open(inputFile, O_RDONLY);
+                        if (fd < 0) {
+                            perror("Failed to open input file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd, STDIN_FILENO);
+                        close(fd);
                     }
-                }                                
+                    if (outputFile != NULL) {
+                        int fd = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (fd < 0) {
+                            perror("Failed to open output file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd, STDOUT_FILENO);
+                        close(fd);
+                    }
+                    
+                    execv(cmdPath, argv);
+                    exit(EXIT_FAILURE);
+                }                        
             }
             else {
                 // parent

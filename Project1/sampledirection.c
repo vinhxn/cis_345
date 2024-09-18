@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h> // waitpid()
 
 #define MAX_LINE 1024
 
