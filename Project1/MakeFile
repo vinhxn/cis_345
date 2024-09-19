@@ -1,0 +1,10 @@
+
+CC=gcc
+
+all: myshell
+
+myshell: myshell.c
+	$(CC) myshell.c - myshell
+
+ clean: 
+	rm myshell myshell.o
