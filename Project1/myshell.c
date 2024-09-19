@@ -71,28 +71,28 @@ char* combine3Strings(const char *str1, const char *str2, const char *str3) {
 }
 
 // Function to append a pathname
-void addPathName(char *str, const char *substring) {
-    if (strlen(str) + strlen(substring) + 1 < MAX_LINE) {
-        if (strlen(str) > 0) {
-            strcat(str, ":");
+void addPathName(char *currPath, const char *newPath) {
+    if (strlen(currPath) + strlen(newPath) + 1 < MAX_LINE) {
+        if (strlen(currPath) > 0) {
+            strcat(currPath, ":");
         }
-        strcat(str, substring);        
+        strcat(currPath, newPath);        
     } else {
         printf("Error: String length exceeds maximum limit.\n");
     }
 }
 
 // Function to delete a pathname
-void removePathname(char *str, const char *substring) {
-    char *pos = strstr(str, substring);
+void removePathname(char *currPath, const char *newPath) {
+    char *pos = strstr(currPath, newPath);
     if (pos != NULL) {
-        size_t len = strlen(substring);
-        if ((pos == str || *(pos - 1) == ':') && (*(pos + len) == ':' || *(pos + len) == '\0')) {
+        size_t len = strlen(newPath);
+        if ((pos == currPath || *(pos - 1) == ':') && (*(pos + len) == ':' || *(pos + len) == '\0')) {
             if (*(pos + len) == ':') {
                 len++;
             }
             memmove(pos, pos + len, strlen(pos + len) + 1);
-            if (pos > str && *(pos - 1) == ':') {
+            if (pos > currPath && *(pos - 1) == ':') {
                 memmove(pos - 1, pos, strlen(pos) + 1);
             }
         }
