@@ -149,7 +149,7 @@ void executeCommand(char *cmd, char *pathnames) {
     /*
     Build-in commands: path
     */
-    if(strcmp(argv[0], "path") == 0) {            
+    else if(strcmp(argv[0], "path") == 0) {            
         if(argc >1)
         {                
             //path + /bin: add pathname "/bin"
