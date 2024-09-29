@@ -1,0 +1,119 @@
+Part1: Sthread (60 points excluding bonus)
+In this part, you will add synchronization implementation to SThreads, a simple user-space threading library.  In the synchronization implementation, you are expected to implement the lock utilities, including read_lock and write_lock.  You do not, however, need to implement read_try_lock and write_try_lock.  Given your implementation, an application programmer can use your synchronization primitive to develop a multithreading application that accesses and updates shared data.  In particular, an application programmer will use your (read/write) lock mechanism to achieve the synchronization goal.
+Get the source program folder  sthread.tgz   (to extract: $ tar zxvf sthread.tgz). The files provide the source, header, and Makefile for the SThreads library. The publicly available functions and datatypes are in the file sthread.h. The library is used as follows:
+Threads are manipulated using variables of type sthread_t.
+sthread_init() must be called exactly once, as the first thing in main(). It returns 0 normally, and -1 on error.
+A new thread is created using the function:
+
+int sthread_create(sthread_t *t, sthread_main_t main, void *arg)
+
+The first argument is where the sthread_t object is returned. The second is the function the new thread should run. The third argument is passed to this function. sthread_create() returns 0 normally and -1 on error.
+sthread_self() returns the sthread_t associated with the currently running thread. sthread_suspend() puts the currently running thread to sleep, and sthread_wake(sthread_t t) wakes up a thread specified.
+An example program:
+#define _REENTRANT
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include "sthread.h"
+
+int
+threadmain(void *arg)
+{
+  int threadno = (int)arg;
+  for (;;) {
+    printf("thread %d: I'm going to sleep\n", threadno);
+    sthread_suspend();
+    printf("thread %d: I woke up!\n", threadno);
+  }
+  return 0;
+}
+
+int
+main(int argc, char *argv[])
+{
+  sthread_t thr1, thr2;
+
+  if (sthread_init() == -1)
+    fprintf(stderr, "%s: sthread_init: %s\n", argv[0], strerror(errno));
+
+  if (sthread_create(&thr1, threadmain, (void *)1) == -1)
+    fprintf(stderr, "%s: sthread_create: %s\n", argv[0], strerror(errno));
+
+  if (sthread_create(&thr2, threadmain, (void *)2) == -1)
+    fprintf(stderr, "%s: sthread_create: %s\n", argv[0], strerror(errno));
+
+  sleep(1);
+  sthread_wake(thr1);
+  sleep(1);
+  sthread_wake(thr2);
+  sleep(1);
+  sthread_wake(thr1);
+  sthread_wake(thr2);
+  sleep(1);
+
+  return 0;
+}
+#define _REENTRANT: This is necessary in any ultithreaded program, as it tells subsequent include files to use reentrant versions of library functions and thread-safe variables. For example, the errno variable, since it is a global variable, is normally not thread-safe. A function in thread A can set it on error, and thread B can set it to something else before the caller in thread A ever gets to read the value. This is an example of a race condition. If you #define _REENTRANT, though, errno is redefined to (*__errno_location()), which references a different address for each thread. An implementation of this function is provided in sthread.c.
+sleep(): you are not allowed to use sleep() or any other timer functions in your implementation for sync functions (except the user applications, which is for demonstration purpose).
+test_and_set_bit(): is used to immplement spinlocks, in which you repeatedly call test_and_set_bit() and a no-op in a tight loop, waiting for the test result to be 0. sched_yield() is a good no-op function to use (within your spinlocks, you need to #include <sched.h>). Note that you can use spinlocks to synchronize the access on your readers-writers locks' shared data structures, but not to implement the readers-writers locks' themselves. In other words, if a thread calls sthread_write_lock() on an unavailable read-write lock, it should suspend rather than spin until the lock is available.
+Regular Option: Uniform priority of read and write threads: read and write threads are treated as the same in your rwlock implementation. If the lock is held (regardlessly in read or write mode), any other threads would block.
+
+Bonus Option (20 points):
+Support muliple readers: your rwlock implementation should allow multiple readers to acquire the lock in read (shared) mode and concurrently execute. For example, if the lock is held by reader thread A, another reader thread B can immediately acquire and share the lock with A if there is no other waiting thread (write). If the lock is held in write mode, no other threads can acquire the lock in read or write mode.
+Favor writer threads over readers: if there are threads waiting to acquire the lock in write mode, you should let one of these threads acquire the lock immediately when the lock becomes abailable. For example, the lock is held by a writer thread and a thread A is waiting to acquire the lock in read mode. Another thread B comes, trying to acquire the lock in write mode. In an implementation that favors writers over readers, thread B can acquire the lock in write mode and proceed if the previous write lock is released.
+Fairness: if multiple writer threads are waiting for the lock, you should let the first one (who has already been waiting for the longest time) acquire the lock first.
+Implementation options for CIS 345 students: as you can see, you may go either "regular" option or "bonus" option. For those who pick the bonus option, you don't need to implement the "Uniform priority". 
+CIS 545 Students must implement the bonus option (but you don't earn bonus points).
+
+Implementation: put your function implementations in a single file, called sync.c, and your structure definitions in sync.h. You shouldn't change sthread.c or sthread.h. In fact, you even don't need to look at the implementations of the functions in sthread.c (but feel free if you want to, of course). Unless otherwise noted, all functions should return 0 on success and -1 on error.
+The prototypes for the eight functions you must implement are found in sync.h, and are all named sthread_*. You must define struct sthread_rwlock_struct. Note that sthread_rwlock_init(sthread_rwlock_t *rwlock) and sthread_rwlock_destroy(sthread_rwlock_t *rwlock) should be used to initialize and free resources related to this struct.
+sthread_read_lock(sthread_rwlock_t *rwlock) should acquire the lock rwlock in read mode if the lock is available and otherwise block waiting until the lock can be acquired in read mode. sthread_read_unlock(sthread_rwlock_t *rwlock) should release the lock that was acquired in read mode and wake up one of threads waiting in the sleeping queue; these two operations must be one atomic step. sthread_read_try_lock(sthread_rwlock_t *rwlock) should obtain the lock in read mode and return 0 if the lock is available and otherwise return 1 immediately without blocking.
+sthread_write_lock(sthread_rwlock_t *rwlock) should acquire the lock rwlock in write mode if the lock is available and otherwise block waiting until the lock can be acquired in write mode. sthread_write_unlock(sthread_rwlock_t *rwlock) should release the lock that was acquired in write mode and wake up one of the threads waiting in the sleeping queue; these two operations must be one atomic step. sthread_write_try_lock(sthread_rwlock_t *rwlock) should obtain the lock in write mode and return 0 if the lock is available and otherwise return 1 immediately without blocking.
+
+Part2: Pthread (30 points)
+A multi-threading application (messageprint.c): in this exercise, you will write a simple Message Print program (similar to the following example code)  in which multiple threads print messages with a controlled order. In particular, we want threads with a prime (thread) ID to print first, and those threads with a composite (thread) ID to print after all the prime threads have done the printing.  Note that all threads will start in a random order, we must have composite numbered threads wait until all the prime threads have printed.
+To achieve the events-print-first functionality, you need to use the condition variable routines in the PThread library:
+pthread_cond_wait(pthread_cond_t *condition, pthread_mutex_t *lock);
+pthread_cond_signal(pthread_cond_t *condition);
+pthread_cond_broadcast(pthread_cond_t *condition);
+The pthread_cond_wait routine will put the caller thread to sleep on the condition variable condition and release the mutex lock, guaranteeing that when the subsequent line is executed after the caller has woken up, the caller will hold lock. The pthread_cond_signal routine wakes up one thread off of the condition variable condition, and pthread_cond_broadcast wakes up all threads that are sleeping on condition variable condition. IMPORTANT: to call any of the above routines, the caller must first hold the lock that is associated with that condition variable.
+You'll need to have these global variables in your messageprint.c file:
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t CV = PTHREAD_COND_INITIALIZER;
+int number_prime_finished = 0;
+You will need to use pthread_mutex_lock, pthread_mutex_unlock, pthread_cond_wait, and pthread_cond_broadcast. Do not use pthread_cond_signal.
+sleep(): you are not allowed to use sleep() or any other timer functions. 
+Input/Output requirements:
+Input: your message print application (messageprint) should take an integer command-line augument that allows the evaluator (TA) to specify the number of threads to be created.  Your program should support at least 20 threads. For example: 
+$ messageprint 20
+Output: each created thread should print out one or two lines of messages.  Again, all composite numbered threads must print after the prime threads have done the printing.  Avoid printing 3 or more lines of message for each thread. 
+
+README & Makefile: (10 points)
+In your README: must be a text file (not a PDF, docx, or rtf).
+Provide the group number and member name/CSUID. In addition, state the contribute (in percentage) of each member, such as 50%-50%, or 55%-45%.  Any group member whose contribution is below 40% will receive the corresponding point deduction, proportioning to the actual contribution.  If a group member contributes 0%, she or he will receive zero even if the other group partner scores 100%. 
+Document your design ideas in this README file. 
+Provide instructions how to compile your code, and how to run your program.
+Provide a sample test output (again in text format).
+Provide a statement if your code contains any bugs or miss a certain component. 
+You must provide a makefile such that the grader can compile your code by simply typing "make".
+Grading:
+Part1:
+10 points will be earned for successful implementation of sthread_rwlock_init(), sthread_rwlock_destroy(), 5 points each.
+15 points will be earned for successful design for the data structure of sthread_rwlock_struct.
+10 points will be earned for other auxillary functions (such as queue operations).
+25 points will be earned for successful implementation of the following functions: sthread_read_lock(), sthread_write_lock(), and their corresponding unlock functions. For regular option, your read_lock should be the same as your write_lock. 
+You must state the option you have chosen, such as regular option or bonus.
+Part2:
+30 points will be earned for successful implementation of pthread based multi-threading application. 
+README and Makefile: 10 points will be earned for a well documented README and a functional Makefile for part2.  Note: you don't need to provide Makefile for part1 because it is already included.  
+
+Submission:
+Create a folder with the name of your group number (all lowercase), and concatenate it with "_p2".  For example, if the group is "group1", then the folder should be "group1_p2". 
+Inside your submission folder, say group1_p2, you should create two subfolders: part1 and par2.
+Copy all required source files into the folders that you created. Copy your created Makefile to part2.  Copy your README to your group submission folder, such as group1_p2.  
+Log in grail server, change the directory to the parent of the folder (created above), and run the following submission command (suppose the submission folder is "group1_p2"):
+turnin -c cis345w -p p2   group1_p2
+If the submission is successful, you should see:
+Compressing submitted files... please wait Your files have been submitted to cis345w, p2 for grading.
+Resubmission: your most recent submission automatically overwrites your previous one.

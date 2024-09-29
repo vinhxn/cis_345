@@ -10,7 +10,6 @@
 
 struct sthread_rwlock_struct {
         /* FILL ME IN! */
-    
 };
 
 typedef struct sthread_rwlock_struct sthread_rwlock_t;
