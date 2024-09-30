@@ -11,7 +11,7 @@ typedef int (*sthread_main_t)(void *);
 typedef struct sthread_struct *sthread_t;
 #define NO_THREAD ((sthread_t)NULL)
 
-//#include "sync.h"
+#include "sync.h"
 
 /*
  * Initialize the sthread system.  Must be called once, before any

@@ -14,7 +14,7 @@ sthread_rwlock_t mylock;
 
 int threadmain(void *arg)
 {
-  int threadno = (int)arg;
+  int threadno = (int)(long)arg;
   for (;;) {
     printf("thread %d: I'm going to sleep\n", threadno);
     sthread_suspend();
@@ -24,7 +24,7 @@ int threadmain(void *arg)
 }
 
 int slowreader(void *arg) {
-  int threadno = (int)arg;
+  int threadno = (int)(long)arg;
   sthread_read_lock(&mylock);
   printf("thread%d ===> This reader thread is very slow\n", threadno);
   sleep(10);
@@ -36,7 +36,7 @@ int slowreader(void *arg) {
 int bcheck(void *arg) {
   int i;
   int trubal;
-  int threadno = (int)arg;
+  int threadno = (int)(long)arg;
   for (i = 0; i<5; i++) {
     sthread_read_lock(&mylock);
     trubal = balance;
@@ -51,7 +51,7 @@ int bcheck(void *arg) {
 int deposit(void *arg) {
   int i, tmp;
   //k = 0;
-  int threadno = (int)arg;
+  int threadno = (int)(long)arg;
   for (i=0; i<NUMLOOP; i++) {
     sthread_write_lock(&mylock);
     tmp = balance;
@@ -66,7 +66,7 @@ int deposit(void *arg) {
 
 int withdraw(void *arg) {
   int i;
-  int threadno = (int)arg;
+  int threadno = (int)(long)arg;
   for (i=0; i<NUMLOOP; i++) {
     sthread_write_lock(&mylock);
     balance -= 1;
@@ -105,9 +105,6 @@ int main(int argc, char *argv[])
   sleep(1);
 
   while (1) {
-    //sleep(1);
-    //sthread_wake(thr1);
-    //sthread_wake(thr2);
     sleep(3);
     printf("the balnce is %d\n", balance);
     if (destroyed == 0) {
