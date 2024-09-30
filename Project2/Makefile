@@ -3,17 +3,12 @@
 #
 
 CC=gcc
-CFLAGS=-g -m32 -O2 -Wall
-LDFLAGS=-g -m32
+RM=rm
 
-.c.s:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -S $<
+all: test
 
-libsthread.a: sthread.o sync.o
-	$(AR) cr $@ $^
-
-test: test.o libsthread.a
-	$(CC) $(LDFLAGS) -o $@ test.o -L. -lsthread
+test: sthread.c sync.c test.c
+	$(CC) -o test sthread.c sync.c test.c
 
 clean:
-	$(RM) libsthread.a test *.o *~
+	$(RM) sthread test *.o *~
