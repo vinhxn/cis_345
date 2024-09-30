@@ -1,0 +1,33 @@
+Design for sthread_rwlock_t
+A read-write lock allows multiple readers to hold the lock simultaneously, but only one writer can hold it at any given time. Additionally, when the write lock is held, no readers can hold the lock. This is typically implemented with counters and condition variables (or similar mechanisms) to synchronize access.
+
+Suggested sthread_rwlock_t Structure
+To implement a read-write lock, we need:
+
+A counter for the number of active readers.
+A flag or counter indicating whether a writer is holding the lock.
+Mechanisms to block/unblock threads trying to read or write (e.g., using semaphores, condition variables, or pipes in the case of sthread).
+
+Implementation of the RWLock Functions
+sthread_rwlock_init: Initialize the lock structure.
+sthread_rwlock_destroy: Destroy the lock structure.
+sthread_read_lock: Acquire the lock for reading, waiting if necessary.
+sthread_read_try_lock: Try to acquire the read lock without waiting.
+sthread_read_unlock: Release the read lock.
+sthread_write_lock: Acquire the lock for writing, waiting if necessary.
+sthread_write_try_lock: Try to acquire the write lock without waiting.
+sthread_write_unlock: Release the write lock.
+
+Explanation of the Functions
+Initialization and Destruction: sthread_rwlock_init() initializes the lock, setting the reader and writer counters to zero. sthread_rwlock_destroy() simply returns as there's no dynamic memory allocation.
+
+Read Lock: sthread_read_lock() attempts to acquire the read lock. If a writer holds the lock, the thread suspends itself and waits for a wake-up signal. sthread_read_try_lock() attempts the same but returns immediately if it can't acquire the lock. sthread_read_unlock() decrements the number of readers and wakes waiting writers if necessary.
+
+Write Lock: sthread_write_lock() acquires the write lock, waiting if readers or another writer holds the lock. sthread_write_try_lock() does the same but returns if it can't acquire the lock immediately. sthread_write_unlock() releases the write lock and wakes either waiting writers or readers.
+
+Further Enhancements
+Thread Suspension and Waking: This implementation uses sthread_suspend() and sthread_wake() for thread synchronization. In a real-world scenario, you would need to track the specific threads waiting for the lock and wake them appropriately.
+
+Deadlock Avoidance: You might want to implement mechanisms to avoid writer starvation, ensuring that writers eventually get the lock.
+
+This implementation provides a basic read-write lock mechanism using the functionality available in your threading library. You can further optimize and refine it to handle edge cases like writer starvation or more efficient waking of waiting threads.
