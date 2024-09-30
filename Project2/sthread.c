@@ -17,16 +17,13 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include "sthread.h"
+#include <stdint.h>
 
 /* make the max stack size 4MB */
 #define DEF_STACK_SIZE 4194304
 /* stack size for manager thread */
 #define UTIL_STACK_SIZE 65536
 
-
-/*
- * Atomic operations for x86 architecture.
- */
 static inline int test_and_set_bit(volatile unsigned long *addr)
 {
 	int oldval;
@@ -37,16 +34,22 @@ static inline int test_and_set_bit(volatile unsigned long *addr)
 			);
 	return oldval;
 }
+
 static inline void clear_bit(volatile unsigned long *addr)
 {
-	unsigned long oldval;
-	__asm__ __volatile__("xchgl %0, %1"
-			: "=r"(oldval), "+m"(*(addr))	/* output */
-			: "0"(0)						/* input */
-			: "memory"	/* clobbered: changing contents of memory */
-			);
+	// unsigned long oldval;
+	// __asm__ __volatile__("xchgl %0, %1"
+	// 		: "=r"(oldval), "+m"(*(addr))	/* output */
+	// 		: "0"(0)						/* input */
+	// 		: "memory"	/* clobbered: changing contents of memory */
+	// 		);
+	__asm__ __volatile__(
+        "lock btr %1, %0"
+        : "+m" (*addr)
+        : "Ir" (0)
+        : "memory"
+    );
 }
-
 
 /*
  * struct sthread_struct encompasses all per-thread state.
@@ -219,7 +222,12 @@ static void _sthread_self_suspend(struct sthread_struct *self)
 		fprintf(stderr, "ERROR: sthread_suspend called by non-running thread!\n");
 		abort();
 	}
-	read(self->pipe[0], buf, 9);
+	//read(self->pipe[0], buf, 9);
+	ssize_t bytes_read = read(self->pipe[0], buf, sizeof(buf));
+    if (bytes_read < 0) {
+        perror("ERROR: read failed in _sthread_self_suspend");
+        abort();
+    }
 }
 
 static int __attribute__ ((noreturn)) start_thread(void *arg)

@@ -8,7 +8,7 @@
 int
 threadmain(void *arg)
 {
-  int threadno = (int)arg;
+  int threadno = (int)(long)arg;
   for (;;) {
     printf("thread %d: I'm going to sleep\n", threadno);
     sthread_suspend();
