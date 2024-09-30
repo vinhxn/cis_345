@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
+#include <stdint.h>
 #include "sthread.h"
 #include "sync.h"
 
@@ -78,20 +79,20 @@ int sthread_rwlock_destroy(sthread_rwlock_t *rwlock)
 int sthread_read_lock(sthread_rwlock_t *rwlock) {
     if (rwlock == NULL) return -1;
     while (1) {
-        if (test_and_set_bit(&rwlock->lock) == 0) {
+        if (test_and_set_bit((uintptr_t *)&rwlock->lock) == 0) {
             if (rwlock->writer == 0 && rwlock->write_waiters == 0) {
                 rwlock->readers++;
-                clear_bit(&rwlock->lock);
+                clear_bit((uintptr_t *)&rwlock->lock);
                 return 0;
             } else {
                 if (rwlock->read_wait_index < MAX_READERS) {
                     rwlock->waiting_readers[rwlock->read_wait_index++] = sthread_self();
                     rwlock->read_waiters++;
                 } else {
-                    clear_bit(&rwlock->lock);
+                    clear_bit((uintptr_t *)&rwlock->lock);
                     return -1;  // Error: too many waiting readers
                 }
-                clear_bit(&rwlock->lock);
+                clear_bit((uintptr_t *)&rwlock->lock);
                 sthread_suspend();
             }
         }
@@ -108,7 +109,7 @@ int sthread_read_try_lock(sthread_rwlock_t *rwlock)
 
 int sthread_read_unlock(sthread_rwlock_t *rwlock) {
     if (rwlock == NULL) return -1;
-    while (test_and_set_bit(&rwlock->lock) != 0)
+    while (test_and_set_bit((uintptr_t *)&rwlock->lock) != 0)
         sched_yield();
 
     rwlock->readers--;
@@ -117,24 +118,24 @@ int sthread_read_unlock(sthread_rwlock_t *rwlock) {
         rwlock->waiting_writer = NO_THREAD;
         rwlock->write_waiters--;
     }
-    clear_bit(&rwlock->lock);
+    clear_bit((uintptr_t *)&rwlock->lock);
     return 0;
 }
 
 int sthread_write_lock(sthread_rwlock_t *rwlock) {
     if (rwlock == NULL) return -1;
     while (1) {
-        if (test_and_set_bit(&rwlock->lock) == 0) {
+        if (test_and_set_bit((uintptr_t *)&rwlock->lock) == 0) {
             if (rwlock->readers == 0 && rwlock->writer == 0) {
                 rwlock->writer = 1;
-                clear_bit(&rwlock->lock);
+                clear_bit((uintptr_t *)&rwlock->lock);
                 return 0;
             } else {
                 if (rwlock->waiting_writer == NO_THREAD) {
                     rwlock->waiting_writer = sthread_self();
                     rwlock->write_waiters++;
                 }
-                clear_bit(&rwlock->lock);
+                clear_bit((uintptr_t *)&rwlock->lock);
                 sthread_suspend();
             }
         }
@@ -154,7 +155,7 @@ int sthread_write_unlock(sthread_rwlock_t *rwlock)
         /* FILL ME IN! */
     if (rwlock == NULL) return -1;
 
-    while (test_and_set_bit(&rwlock->lock) != 0)
+    while (test_and_set_bit((uintptr_t *)&rwlock->lock) != 0)
         sched_yield();
 
     rwlock->writer = 0;
@@ -170,6 +171,6 @@ int sthread_write_unlock(sthread_rwlock_t *rwlock)
         rwlock->read_wake_index = 0;
         rwlock->read_wait_index = 0;
     }
-    clear_bit(&rwlock->lock);
+    clear_bit((uintptr_t *)&rwlock->lock);
     return 0;
 }
