@@ -92,13 +92,13 @@ int main(int argc, char *argv[])
 
 
   for (i = 0; i<NUMTHR; i++) {
-    if (sthread_create(&thr3[i], bcheck, (void *)(NUMTHR+NUMTHR+i)) == -1)
+    if (sthread_create(&thr3[i], bcheck, (int)(void *)(NUMTHR+NUMTHR+i)) == -1)
       fprintf(stderr, "%s: sthread_create: %s\n", argv[0], strerror(errno));
 
-    if (sthread_create(&thr1[i], deposit, (void *)(1+i)) == -1)
+    if (sthread_create(&thr1[i], deposit, (int)(void *)(1+i)) == -1)
       fprintf(stderr, "%s: sthread_create: %s\n", argv[0], strerror(errno));
 
-    if (sthread_create(&thr2[i], withdraw, (void *)(NUMTHR+i)) == -1)
+    if (sthread_create(&thr2[i], withdraw, (int)(void *)(NUMTHR+i)) == -1)
       fprintf(stderr, "%s: sthread_create: %s\n", argv[0], strerror(errno));
   }
 
