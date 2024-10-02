@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     }
 
     // calculate number of prime threads
-    for(int i = 0; i < total_threads; i++) {
+    for(int i = 1; i <= total_threads; i++) {
         if(isPrime(i))
             total_prime_threads++;
     }
