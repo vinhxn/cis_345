@@ -22,7 +22,6 @@ bool isPrime(int num) {
     return true;
 }
 
-
 //Thread function
 void* thread_function(void* arg) {
     int thread_id = *((int*)arg);
@@ -86,4 +85,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-
