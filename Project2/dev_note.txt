@@ -27,3 +27,9 @@ Explanation of the Functions:
 - Write Lock: sthread_write_lock() acquires the write lock, waiting if readers or another writer holds the lock. sthread_write_unlock() releases the write lock and wakes either waiting writers or readers.
 
 - Thread Suspension and Waking: This implementation uses sthread_suspend() and sthread_wake() for thread synchronization. 
+
++ Design idea for part 2:
+- Prime Check Function isPrime(): A function isPrime checks if a number is prime.
+- Thread Function thread_function(): Each thread checks if its ID is prime. If not, it waits until all prime threads have printed their messages. If it is prime, it prints its message and increments the count of finished prime threads.
+- Synchronization: Uses mutexes and condition variables to synchronize threads, ensuring non-prime threads wait until all prime threads have finished.
+- Main Function: Initializes the total number of threads, calculates the number of prime threads, creates the threads, and waits for all threads to complete.
