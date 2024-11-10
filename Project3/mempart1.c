@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     unsigned long virtual_address;
     while (fread(&virtual_address, sizeof(unsigned long), 1, input_file) == 1) {
         unsigned long physical_address = translate_address(virtual_address);
-        printf("0x%016lx\n -> 0x%04lx\n", virtual_address, physical_address);
+        printf("0x%016lx -> 0x%04lx\n", virtual_address, physical_address);
         fprintf(output_file, "0x%04lx\n", physical_address);
     }
 
