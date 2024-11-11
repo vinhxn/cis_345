@@ -28,5 +28,68 @@ Main Function:
     - Output and Checksum: Write the physical address to the output file.
     - After processing all addresses, close the input and output files.
     - Compute the MD5 checksum of the output file and store it in a result file.
+1.4. Output
+File "part1out": sample content as below:
+0x023C
+0x02EC
+0x00E0
+0x02A0
+0x036C
+0x034C
+0x0168
+0x02DC
+0x00D0
+0x0284
+0x0098
+0x0378
+0x02F8
+0x02D0
+0x0330
+0x02B8
+0x0314
+0x02B4
+0x0378
+0x0118
+
+File "p1result.txt":
+d4b5efb200a7e6adfccc5202a6e8d7a3  part1out
 
 2. Part 2:
+2.1 Project Overview:
+    Source Files: phyframe.h, phyframe.c, pagetable.h, pagetable.c, mempart2.c
+    Input: A file containing a sequence of virtual addresses (binary format)
+    Output: A file containing the corresponding physical addresses (text format) and a file with the MD5 checksum and page fault count
+2.2. Components:
+- Physical Frame Management (phyframe.c):
+    Manage the allocation and deallocation of physical frames.
+    Implement the LRU page replacement policy.
+- Page Table Management (pagetable.c):
+    Manage the page table entries for the process.
+    Implement reverse mapping to quickly locate which page table entry is pointing to a specific physical frame.
+- Main Program (mempart2.c):
+    Read the input sequence of virtual addresses.
+    Translate virtual addresses to physical addresses using the implemented page table.
+    Handle input/output operations.
+    Report the number of page faults.
+2.3. Program Flow:
+- Main Program (mempart2.c):
+    Validate the number of command-line arguments.
+    Open the input file for reading.
+    Open the output file for writing.
+    Initialize the page table and physical frame management.
+    Read virtual addresses from the input file.
+    For each virtual address, translate it to a physical address using the page table.
+    Handle page faults and allocate/reallocate physical frames as needed.
+    Write the translated physical address to the output file.
+    Compute the MD5 checksum of the output file and store it in a result file.
+    Report the number of page faults.
+
+- Physical Frame Management (phyframe.c):
+    Implement functions to allocate and deallocate physical frames.
+    Implement the LRU page replacement policy.
+    Update the LRU information upon each access.
+
+- Page Table Management (pagetable.c):
+    Implement functions to manage the page table entries.
+    Implement reverse mapping to quickly locate page table entries.
+    Update the page table and reverse mapping upon each access.
