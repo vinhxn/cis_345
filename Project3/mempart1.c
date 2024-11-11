@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define PAGE_SIZE 256
+#define PAGE_SIZE 128
 #define PAGE_ENTRIES 7
 
 // Hardcoded page table
-unsigned int page_table[PAGE_ENTRIES] = { 0x02, 0x04, 0x01, 0x07, 0x03, 0x05, 0x06};
+unsigned int page_table[PAGE_ENTRIES] = { 2, 4, 1, 7, 3, 5, 6};
 
 unsigned long translate_address(unsigned long virtual_address) {
-    unsigned int page_number = (virtual_address >> 8) & 0xFF;
-    unsigned int offset = virtual_address & 0xFF;
+    unsigned int page_number = (virtual_address / PAGE_SIZE);
+    unsigned int offset = virtual_address % PAGE_SIZE;
 
     if (page_number >= PAGE_ENTRIES) {
         fprintf(stderr, "Invalid page number: %u\n", page_number);
@@ -17,7 +17,7 @@ unsigned long translate_address(unsigned long virtual_address) {
     }
 
     unsigned int frame_number = page_table[page_number];
-    unsigned long physical_address = (frame_number << 8) | offset;
+    unsigned long physical_address = (frame_number * PAGE_SIZE) + offset;
 
     return physical_address;
 }
@@ -44,8 +44,8 @@ int main(int argc, char *argv[]) {
     unsigned long virtual_address;
     while (fread(&virtual_address, sizeof(unsigned long), 1, input_file) == 1) {
         unsigned long physical_address = translate_address(virtual_address);
-        printf("0x%016lx -> 0x%04lx\n", virtual_address, physical_address);
-        fprintf(output_file, "0x%04lx\n", physical_address);
+        printf("0x%016lX -> 0x%04lX\n", virtual_address, physical_address);
+        fprintf(output_file, "0x%04lX\n", physical_address);
     }
 
     fclose(input_file);
